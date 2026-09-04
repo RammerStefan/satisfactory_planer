@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#26313B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FICSIT Planer">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>FICSIT Produktionsplaner 1.2</title>
+<style>
+:root{
+  --bg:#26313B; --panel:#303D49; --panel2:#3A4856; --line:#4A5967;
+  --text:#EEF2F5; --muted:#A5B2BD; --orange:#E9A050; --orange2:#F2B86B;
+  --green:#6FCF97; --red:#F07A6B; --blue:#7EB6E8;
+  --font:"Bahnschrift","DIN Alternate","Barlow Condensed","Roboto Condensed","Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.4}
+button,input,select{font-family:inherit;font-size:inherit}
+a{color:var(--orange)}
+.app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}
+nav{background:var(--panel);border-right:1px solid var(--line);padding:16px 0;position:sticky;top:0;height:100vh}
+nav .brand{padding:0 18px 16px;border-bottom:1px solid var(--line);margin-bottom:8px}
+nav .brand b{display:block;font-size:22px;letter-spacing:.5px;color:var(--orange)}
+nav .brand span{color:var(--muted);font-size:13px}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--muted);padding:10px 18px;cursor:pointer;border-left:3px solid transparent}
+nav button.active{color:var(--text);border-left-color:var(--orange);background:var(--panel2)}
+nav button:hover{color:var(--text)}
+main{padding:20px 24px 60px;max-width:1200px}
+h1{font-size:24px;margin:0 0 4px;font-weight:600}
+h2{font-size:17px;margin:22px 0 8px;font-weight:600;color:var(--orange2)}
+.sub{color:var(--muted);margin:0 0 16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{margin:0}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:7px 9px;min-width:0}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
+input[type=number]{width:92px}
+input[type=checkbox]{width:auto;accent-color:var(--orange)}
+.btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--orange)}
+.btn.primary{background:var(--orange);color:#1a1f24;border-color:var(--orange);font-weight:600}
+.btn.primary:hover{background:var(--orange2)}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.btn.sm{padding:3px 8px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--muted);font-weight:500;font-size:13px}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.pos{color:var(--green)} .neg{color:var(--red)} .zero{color:var(--muted)}
+.tag{display:inline-block;padding:1px 7px;border-radius:3px;font-size:12px;background:var(--panel2);color:var(--muted);margin-left:6px}
+.tag.alt{color:var(--blue)} .tag.def{color:var(--orange)} .tag.raw{color:var(--green)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.kpi small{display:block;color:var(--muted);font-size:13px}
+.kpi b{font-size:22px;font-weight:600}
+.muted{color:var(--muted)}
+.scroll{overflow-x:auto}
+.io{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.io .col{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px}
+.io .col h3{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:500}
+.io .rowline{display:flex;gap:6px;margin-bottom:6px}
+.io .rowline input{flex:1}
+.empty{color:var(--muted);padding:18px 0;text-align:center}
+textarea{width:100%;min-height:140px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:8px;font-family:monospace;font-size:12px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--orange);color:#1a1f24;padding:8px 16px;border-radius:4px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.hidden{display:none!important}
+.bar{height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--orange)}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  nav{position:fixed;bottom:0;left:0;right:0;top:auto;height:auto;z-index:20;display:flex;padding:4px 4px calc(4px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line);background:var(--panel)}
+  nav .brand{display:none}
+  nav button{flex:1;text-align:center;white-space:nowrap;border-left:0;border-top:3px solid transparent;padding:9px 2px;font-size:12px;border-radius:0}
+  nav button.active{border-top-color:var(--orange);border-left:0;background:none}
+  main{padding:14px 12px calc(76px + env(safe-area-inset-bottom));max-width:none}
+  h1{font-size:22px}
+  .row{flex-direction:column;align-items:stretch}
+  .row>*{width:100%}
+  .row label{display:flex;align-items:center;gap:8px}
+  input,select,.btn{min-height:44px;font-size:16px}
+  .btn.sm{min-height:36px;font-size:14px}
+  input[type=number]{width:100%}
+  .io{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi b{font-size:18px}
+  /* Tabellen als Karten */
+  table.cards,table.cards tbody{display:block}
+  table.cards tr{display:block;border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:8px;background:var(--bg)}
+  table.cards tr:first-child{display:none}
+  table.cards td{display:flex;justify-content:space-between;gap:10px;border:0;padding:4px 0;text-align:left}
+  table.cards td.num{text-align:right}
+  table.cards td:empty{display:none}
+  table.cards td::before{content:attr(data-th);color:var(--muted);font-size:13px;flex:0 0 auto}
+  table.cards td:not([data-th])::before{display:none}
+  table.cards td input[type=text],table.cards td input[type=number]{width:auto;max-width:55%;min-height:38px}
+  .planTag{display:flex;justify-content:space-between;width:100%;margin:0 0 6px}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav>
+  <div class="brand"><b>FICSIT Planer</b><span>Satisfactory 1.2</span></div>
+  <button data-tab="planer" class="active">Planer</button>
+  <button data-tab="linien">Produktionslinien</button>
+  <button data-tab="bilanz">Bilanz</button>
+  <button data-tab="rezepte">Rezepte</button>
+  <button data-tab="items">Items</button>
+  <button data-tab="daten">Daten</button>
+</nav>
+<main>
+
+<!-- PLANER -->
+<section id="tab-planer">
+  <h1>Planer</h1>
+  <p class="sub">Zielprodukt und Rate eingeben – die komplette Kette wird mit den Standardrezepten aufgelöst.</p>
+  <div class="panel">
+    <div class="row">
+      <select id="planItem"></select>
+      <input type="number" id="planRate" value="10" min="0" step="0.5"> <span class="muted">/min</span>
+      <button class="btn" id="planAdd">Ziel hinzufügen</button>
+    </div>
+    <div id="planTargets" style="margin-top:10px"></div>
+  </div>
+  <div id="planResult"></div>
+</section>
+
+<!-- LINIEN -->
+<section id="tab-linien" class="hidden">
+  <h1>Produktionslinien</h1>
+  <p class="sub">Alles, was tatsächlich gebaut ist. Daraus wird die Bilanz berechnet.</p>
+  <div class="panel">
+    <div class="row">
+      <select id="lineRecipe"></select>
+      <input type="number" id="lineMachines" value="1" min="0" step="0.1" title="Maschinen"> <span class="muted">Maschinen</span>
+      <input type="number" id="lineClock" value="100" min="1" max="250" step="1" title="Takt %"> <span class="muted">%</span>
+      <input type="text" id="lineNote" placeholder="Notiz / Standort" style="width:170px">
+      <button class="btn primary" id="lineAdd">Linie hinzufügen</button>
+    </div>
+  </div>
+  <div class="panel scroll" id="lineTable"></div>
+</section>
+
+<!-- BILANZ -->
+<section id="tab-bilanz" class="hidden">
+  <h1>Bilanz</h1>
+  <p class="sub">Produktion minus Verbrauch für jedes Item, berechnet aus allen Produktionslinien.</p>
+  <div class="kpis" id="bilanzKpis"></div>
+  <div class="panel">
+    <div class="row">
+      <select id="bilanzFilter">
+        <option value="all">Alle Items</option>
+        <option value="raw">Nur Rohstoffe</option>
+        <option value="neg">Nur Defizite</option>
+        <option value="pos">Nur Überschüsse</option>
+      </select>
+      <input type="text" id="bilanzSearch" placeholder="Suchen…" style="flex:1;max-width:240px">
+    </div>
+  </div>
+  <div class="panel scroll" id="bilanzTable"></div>
+</section>
+
+<!-- REZEPTE -->
+<section id="tab-rezepte" class="hidden">
+  <h1>Rezepte</h1>
+  <p class="sub">Alle Raten in Stück pro Minute bei 100 %. Ein Standardrezept pro Item wird im Planer verwendet.</p>
+  <div class="panel">
+    <div class="row">
+      <button class="btn primary" id="recipeNew">Neues Rezept</button>
+      <input type="text" id="recipeSearch" placeholder="Suchen…" style="flex:1;max-width:260px">
+      <label class="muted"><input type="checkbox" id="recipeShowAlt" checked> Alternativrezepte anzeigen</label>
+    </div>
+  </div>
+  <div class="panel hidden" id="recipeForm"></div>
+  <div class="panel scroll" id="recipeTable"></div>
+</section>
+
+<!-- ITEMS -->
+<section id="tab-items" class="hidden">
+  <h1>Items</h1>
+  <p class="sub">Rohstoffe werden im Planer nicht weiter aufgelöst und in der Bilanz gesondert ausgewiesen.</p>
+  <div class="panel">
+    <div class="row">
+      <input type="text" id="itemNewName" placeholder="Neues Item" style="width:200px">
+      <label class="muted"><input type="checkbox" id="itemNewRaw"> Rohstoff</label>
+      <button class="btn" id="itemAdd">Hinzufügen</button>
+      <input type="text" id="itemSearch" placeholder="Suchen…" style="flex:1;max-width:220px">
+    </div>
+  </div>
+  <div class="panel scroll" id="itemTable"></div>
+</section>
+
+<!-- DATEN -->
+<section id="tab-daten" class="hidden">
+  <h1>Daten</h1>
+  <p class="sub">Spielmodus-Multiplikatoren aus 1.2, Maschinen, Export und Import.</p>
+  <h2>Spielmodus</h2>
+  <div class="panel">
+    <div class="row">
+      <label class="muted">Rezeptkosten × <input type="number" id="setRecipeMult" min="0.25" max="2" step="0.25"></label>
+      <label class="muted">Energieverbrauch × <input type="number" id="setPowerMult" min="0.25" max="5" step="0.25"></label>
+    </div>
+    <p class="muted" style="margin:8px 0 0">Rezeptkosten skalieren alle Eingänge, Energie den Verbrauch aller Maschinen.</p>
+  </div>
+  <h2>Maschinen</h2>
+  <div class="panel scroll" id="machineTable"></div>
+  <h2>Sicherung</h2>
+  <div class="panel">
+    <div class="row">
+      <button class="btn" id="exportBtn">JSON herunterladen</button>
+      <button class="btn" id="importBtn">JSON aus Feld importieren</button>
+      <button class="btn danger" id="resetBtn">Auf Standardrezepte zurücksetzen</button>
+    </div>
+    <textarea id="jsonBox" placeholder="JSON hier einfügen…" style="margin-top:10px"></textarea>
+  </div>
+</section>
+
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- Standarddaten (Vanilla, Stück/min bei 100 %) ----------
+const RAW=["Iron Ore","Copper Ore","Limestone","Coal","Caterium Ore","Raw Quartz","Sulfur","Bauxite","Crude Oil","Water","Uranium","Nitrogen Gas","SAM"];
+const MACHINES={
+  "Smelter":4,"Constructor":4,"Assembler":15,"Foundry":16,"Manufacturer":55,
+  "Refinery":30,"Packager":10,"Blender":75,"Particle Accelerator":500,"Converter":250,"Quantum Encoder":1000,"Miner Mk.2":15,"Water Extractor":20,"Oil Extractor":40
+};
+const R=(name,machine,inp,out,alt=false)=>({id:uid(),name,machine,inputs:inp,outputs:out,alt});
+const I=(item,rate)=>({item,rate});
+function defaultRecipes(){return [
+ R("Iron Ingot","Smelter",[I("Iron Ore",30)],[I("Iron Ingot",30)]),
+ R("Copper Ingot","Smelter",[I("Copper Ore",30)],[I("Copper Ingot",30)]),
+ R("Caterium Ingot","Smelter",[I("Caterium Ore",45)],[I("Caterium Ingot",15)]),
+ R("Steel Ingot","Foundry",[I("Iron Ore",45),I("Coal",45)],[I("Steel Ingot",45)]),
+ R("Aluminum Ingot","Foundry",[I("Aluminum Scrap",90),I("Silica",75)],[I("Aluminum Ingot",60)]),
+ R("Iron Plate","Constructor",[I("Iron Ingot",30)],[I("Iron Plate",20)]),
+ R("Iron Rod","Constructor",[I("Iron Ingot",15)],[I("Iron Rod",15)]),
+ R("Screw","Constructor",[I("Iron Rod",10)],[I("Screw",40)]),
+ R("Copper Sheet","Constructor",[I("Copper Ingot",20)],[I("Copper Sheet",10)]),
+ R("Wire","Constructor",[I("Copper Ingot",15)],[I("Wire",30)]),
+ R("Cable","Constructor",[I("Wire",60)],[I("Cable",30)]),
+ R("Concrete","Constructor",[I("Limestone",45)],[I("Concrete",15)]),
+ R("Quickwire","Constructor",[I("Caterium Ingot",12)],[I("Quickwire",60)]),
+ R("Steel Beam","Constructor",[I("Steel Ingot",60)],[I("Steel Beam",15)]),
+ R("Steel Pipe","Constructor",[I("Steel Ingot",30)],[I("Steel Pipe",20)]),
+ R("Silica","Constructor",[I("Raw Quartz",22.5)],[I("Silica",37.5)]),
+ R("Quartz Crystal","Constructor",[I("Raw Quartz",37.5)],[I("Quartz Crystal",22.5)]),
+ R("Aluminum Casing","Constructor",[I("Aluminum Ingot",90)],[I("Aluminum Casing",60)]),
+ R("Empty Canister","Constructor",[I("Plastic",30)],[I("Empty Canister",60)]),
+ R("Reinforced Iron Plate","Assembler",[I("Iron Plate",30),I("Screw",60)],[I("Reinforced Iron Plate",5)]),
+ R("Rotor","Assembler",[I("Iron Rod",20),I("Screw",100)],[I("Rotor",4)]),
+ R("Modular Frame","Assembler",[I("Reinforced Iron Plate",15),I("Iron Rod",60)],[I("Modular Frame",2)]),
+ R("Smart Plating","Assembler",[I("Reinforced Iron Plate",2),I("Rotor",2)],[I("Smart Plating",2)]),
+ R("Versatile Framework","Assembler",[I("Modular Frame",2.5),I("Steel Beam",30)],[I("Versatile Framework",5)]),
+ R("Automated Wiring","Assembler",[I("Stator",2.5),I("Cable",50)],[I("Automated Wiring",2.5)]),
+ R("Stator","Assembler",[I("Steel Pipe",15),I("Wire",40)],[I("Stator",5)]),
+ R("Motor","Assembler",[I("Rotor",10),I("Stator",10)],[I("Motor",5)]),
+ R("Encased Industrial Beam","Assembler",[I("Steel Beam",24),I("Concrete",30)],[I("Encased Industrial Beam",6)]),
+ R("Circuit Board","Assembler",[I("Copper Sheet",15),I("Plastic",30)],[I("Circuit Board",7.5)]),
+ R("AI Limiter","Assembler",[I("Copper Sheet",25),I("Quickwire",100)],[I("AI Limiter",5)]),
+ R("Alclad Aluminum Sheet","Assembler",[I("Aluminum Ingot",30),I("Copper Ingot",10)],[I("Alclad Aluminum Sheet",30)]),
+ R("Heat Sink","Assembler",[I("Alclad Aluminum Sheet",37.5),I("Copper Sheet",22.5)],[I("Heat Sink",7.5)]),
+ R("Heavy Modular Frame","Manufacturer",[I("Modular Frame",10),I("Steel Pipe",40),I("Encased Industrial Beam",10),I("Screw",240)],[I("Heavy Modular Frame",2)]),
+ R("Computer","Manufacturer",[I("Circuit Board",10),I("Cable",20),I("Plastic",40)],[I("Computer",2.5)]),
+ R("Modular Engine","Manufacturer",[I("Motor",2),I("Rubber",15),I("Smart Plating",2)],[I("Modular Engine",1)]),
+ R("Adaptive Control Unit","Manufacturer",[I("Automated Wiring",5),I("Circuit Board",5),I("Heavy Modular Frame",1),I("Computer",2)],[I("Adaptive Control Unit",1)]),
+ R("Crystal Oscillator","Manufacturer",[I("Quartz Crystal",36),I("Cable",28),I("Reinforced Iron Plate",5)],[I("Crystal Oscillator",2)]),
+ R("High-Speed Connector","Manufacturer",[I("Quickwire",210),I("Cable",37.5),I("Circuit Board",3.75)],[I("High-Speed Connector",3.75)]),
+ R("Supercomputer","Manufacturer",[I("Computer",7.5),I("AI Limiter",3.75),I("High-Speed Connector",5.625),I("Plastic",45)],[I("Supercomputer",1.875)]),
+ R("Plastic","Refinery",[I("Crude Oil",30)],[I("Plastic",20),I("Heavy Oil Residue",10)]),
+ R("Rubber","Refinery",[I("Crude Oil",30)],[I("Rubber",20),I("Heavy Oil Residue",20)]),
+ R("Fuel","Refinery",[I("Crude Oil",60)],[I("Fuel",40),I("Polymer Resin",30)]),
+ R("Residual Plastic","Refinery",[I("Polymer Resin",60),I("Water",20)],[I("Plastic",20)],true),
+ R("Residual Rubber","Refinery",[I("Polymer Resin",40),I("Water",40)],[I("Rubber",20)],true),
+ R("Residual Fuel","Refinery",[I("Heavy Oil Residue",60)],[I("Fuel",40)],true),
+ R("Petroleum Coke","Refinery",[I("Heavy Oil Residue",40)],[I("Petroleum Coke",120)]),
+ R("Sulfuric Acid","Refinery",[I("Sulfur",50),I("Water",50)],[I("Sulfuric Acid",50)]),
+ R("Alumina Solution","Refinery",[I("Bauxite",120),I("Water",180)],[I("Alumina Solution",120),I("Silica",50)]),
+ R("Aluminum Scrap","Refinery",[I("Alumina Solution",240),I("Coal",120)],[I("Aluminum Scrap",360),I("Water",120)]),
+ R("Battery","Blender",[I("Sulfuric Acid",50),I("Alumina Solution",40),I("Aluminum Casing",20)],[I("Battery",20),I("Water",30)]),
+ R("Bolted Iron Plate","Assembler",[I("Iron Plate",90),I("Screw",250)],[I("Reinforced Iron Plate",15)],true),
+ R("Stitched Iron Plate","Assembler",[I("Iron Plate",18.75),I("Wire",37.5)],[I("Reinforced Iron Plate",5.625)],true),
+ R("Cast Screw","Constructor",[I("Iron Ingot",12.5)],[I("Screw",50)],true),
+ R("Steel Screw","Constructor",[I("Steel Beam",5)],[I("Screw",260)],true),
+ R("Iron Wire","Constructor",[I("Iron Ingot",12.5)],[I("Wire",22.5)],true),
+ R("Fused Wire","Assembler",[I("Copper Ingot",12),I("Caterium Ingot",3)],[I("Wire",90)],true),
+ R("Solid Steel Ingot","Foundry",[I("Iron Ingot",40),I("Coal",40)],[I("Steel Ingot",60)],true),
+ R("Coke Steel Ingot","Foundry",[I("Iron Ore",75),I("Petroleum Coke",75)],[I("Steel Ingot",100)],true),
+ R("Pure Iron Ingot","Refinery",[I("Iron Ore",35),I("Water",20)],[I("Iron Ingot",65)],true),
+ R("Pure Copper Ingot","Refinery",[I("Copper Ore",15),I("Water",10)],[I("Copper Ingot",37.5)],true),
+ R("Steeled Frame","Assembler",[I("Reinforced Iron Plate",2),I("Steel Pipe",10)],[I("Modular Frame",3)],true),
+ R("Heavy Encased Frame","Manufacturer",[I("Modular Frame",7.5),I("Encased Industrial Beam",9.375),I("Steel Pipe",33.75),I("Concrete",20.625)],[I("Heavy Modular Frame",2.8125)],true),
+];}
+function uid(){return Math.random().toString(36).slice(2,10)}
+
+// ---------- State ----------
+let S=null;
+const KEY="ficsit-planner-v1";
+function freshState(){
+  const recipes=defaultRecipes();
+  const items={};
+  RAW.forEach(n=>items[n]={raw:true});
+  recipes.forEach(r=>{[...r.inputs,...r.outputs].forEach(x=>{if(!items[x.item])items[x.item]={raw:false}})});
+  // Standardrezepte: erstes Nicht-Alternativrezept je Item
+  const defaults={};
+  recipes.forEach(r=>{if(!r.alt)r.outputs.forEach(o=>{if(!defaults[o.item])defaults[o.item]=r.id})});
+  return {recipes,items,defaults,lines:[],targets:[],settings:{recipeMult:1,powerMult:1},machines:{...MACHINES}};
+}
+async function load(){
+  try{ if(window.storage){const r=await window.storage.get(KEY,false);if(r&&r.value){S=JSON.parse(r.value);return}} }catch(e){}
+  S=freshState();
+}
+let saveT=null;
+function save(){
+  clearTimeout(saveT);
+  saveT=setTimeout(async()=>{try{if(window.storage)await window.storage.set(KEY,JSON.stringify(S),false)}catch(e){}},300);
+}
+const $=s=>document.querySelector(s);
+const fmt=n=>{if(Math.abs(n)<0.0005)return "0";const s=Math.abs(n)>=100?n.toFixed(1):n.toFixed(2);return s.replace(/\.?0+$/,"")};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600)}
+function itemList(){return Object.keys(S.items).sort((a,b)=>a.localeCompare(b))}
+function ensureItem(n){if(n&&!S.items[n])S.items[n]={raw:false}}
+function recipeById(id){return S.recipes.find(r=>r.id===id)}
+function powerOf(machine,clock){const base=(S.machines[machine]||0)*S.settings.powerMult;return base*Math.pow(clock/100,1.321928)}
+function inMult(){return S.settings.recipeMult}
+
+// ---------- Tabs ----------
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));
+  document.querySelectorAll("main > section").forEach(s=>s.classList.toggle("hidden",s.id!=="tab-"+b.dataset.tab));
+  renderAll();
+});
+
+// ---------- Planer ----------
+function planCompute(targets){
+  // Bedarf iterativ auflösen
+  const demand={}; targets.forEach(t=>demand[t.item]=(demand[t.item]||0)+t.rate);
+  const machines={}; const supply={}; const raw={}; const missing=new Set();
+  let guard=0;
+  while(guard++<500){
+    let progressed=false;
+    for(const item of Object.keys(demand)){
+      const need=demand[item]-(supply[item]||0);
+      if(need<=1e-6)continue;
+      if(S.items[item]&&S.items[item].raw){raw[item]=(raw[item]||0)+need;supply[item]=(supply[item]||0)+need;progressed=true;continue}
+      const rid=S.defaults[item]; const r=rid&&recipeById(rid);
+      if(!r){missing.add(item);supply[item]=(supply[item]||0)+need;progressed=true;continue}
+      const out=r.outputs.find(o=>o.item===item).rate;
+      const n=need/out;
+      machines[r.id]=(machines[r.id]||0)+n;
+      r.outputs.forEach(o=>supply[o.item]=(supply[o.item]||0)+o.rate*n);
+      r.inputs.forEach(i=>demand[i.item]=(demand[i.item]||0)+i.rate*n*inMult());
+      progressed=true;
+    }
+    if(!progressed)break;
+  }
+  const byproducts={};
+  Object.keys(supply).forEach(k=>{const s=supply[k]-(demand[k]||0);if(s>1e-6&&!(S.items[k]&&S.items[k].raw))byproducts[k]=s});
+  return {machines,raw,byproducts,missing:[...missing]};
+}
+function renderPlan(){
+  const sel=$("#planItem"); const cur=sel.value;
+  sel.innerHTML=itemList().filter(i=>!S.items[i].raw).map(i=>`<option ${i===cur?"selected":""}>${esc(i)}</option>`).join("");
+  $("#planTargets").innerHTML=S.targets.length?S.targets.map((t,i)=>`<span class="tag" style="font-size:14px;color:var(--text);padding:4px 9px;margin:0 6px 6px 0">${esc(t.item)} ${fmt(t.rate)}/min <button class="btn sm" data-del="${i}" style="margin-left:6px">×</button></span>`).join("")
+   :`<span class="muted">Noch kein Ziel.</span>`;
+  $("#planTargets").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{S.targets.splice(+b.dataset.del,1);save();renderPlan()});
+  const res=$("#planResult");
+  if(!S.targets.length){res.innerHTML="";return}
+  const p=planCompute(S.targets);
+  let power=0;
+  const rows=Object.entries(p.machines).map(([rid,n])=>{const r=recipeById(rid);const pw=powerOf(r.machine,100)*n;power+=pw;
+    return `<tr><td>${esc(r.name)}${r.alt?'<span class="tag alt">Alt</span>':''}</td><td class="muted">${esc(r.machine)}</td><td class="num"><b>${fmt(n)}</b> <span class="muted">(${Math.ceil(n-1e-6)})</span></td>
+      <td class="muted">${r.inputs.map(i=>`${esc(i.item)} ${fmt(i.rate*n*inMult())}`).join(", ")}</td><td class="muted">${r.outputs.map(o=>`${esc(o.item)} ${fmt(o.rate*n)}`).join(", ")}</td><td class="num">${fmt(pw)}</td></tr>`}).join("");
+  res.innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><small>Maschinen gesamt</small><b>${fmt(Object.values(p.machines).reduce((a,b)=>a+Math.ceil(b-1e-6),0))}</b></div>
+    <div class="kpi"><small>Leistung</small><b>${fmt(power)} MW</b></div>
+    <div class="kpi"><small>Rohstoffe</small><b>${Object.keys(p.raw).length}</b></div>
+  </div>
+  ${p.missing.length?`<div class="panel" style="border-color:var(--red)"><b class="neg">Kein Standardrezept:</b> ${p.missing.map(esc).join(", ")} – unter Rezepte anlegen oder als Rohstoff markieren.</div>`:""}
+  <h2>Rohstoffbedarf</h2>
+  <div class="panel scroll"><table><tr><th>Rohstoff</th><th class="num">/min</th><th class="num">Miner Mk.2 (120/min)</th></tr>
+  ${Object.entries(p.raw).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num"><b>${fmt(v)}</b></td><td class="num muted">${fmt(v/120)}</td></tr>`).join("")}</table></div>
+  ${Object.keys(p.byproducts).length?`<h2>Nebenprodukte / Überschuss</h2><div class="panel scroll"><table>${Object.entries(p.byproducts).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num pos">+${fmt(v)}/min</td></tr>`).join("")}</table></div>`:""}
+  <h2>Produktionsschritte</h2>
+  <div class="panel scroll"><table><tr><th>Rezept</th><th>Maschine</th><th class="num">Anzahl</th><th>Eingang /min</th><th>Ausgang /min</th><th class="num">MW</th></tr>${rows}</table>
+  <div class="row" style="margin-top:12px"><button class="btn primary" id="planApply">Als Produktionslinien übernehmen</button><label class="muted"><input type="checkbox" id="planRound" checked> auf ganze Maschinen aufrunden</label></div></div>`;
+  $("#planApply").onclick=()=>{const round=$("#planRound").checked;
+    Object.entries(p.machines).forEach(([rid,n])=>S.lines.push({id:uid(),recipe:rid,machines:round?Math.ceil(n-1e-6):+n.toFixed(4),clock:100,note:"Planer"}));
+    save();toast("Linien übernommen");};
+}
+$("#planAdd").onclick=()=>{const item=$("#planItem").value,rate=+$("#planRate").value;if(!item||rate<=0)return;S.targets.push({item,rate});save();renderPlan()};
+
+// ---------- Linien ----------
+function renderLines(){
+  const sel=$("#lineRecipe"); const cur=sel.value;
+  sel.innerHTML=[...S.recipes].sort((a,b)=>a.name.localeCompare(b.name)).map(r=>`<option value="${r.id}" ${r.id===cur?"selected":""}>${esc(r.name)}${r.alt?" (Alt)":""} – ${esc(r.machine)}</option>`).join("");
+  const t=$("#lineTable");
+  if(!S.lines.length){t.innerHTML=`<div class="empty">Noch keine Linien. Über den Planer übernehmen oder oben eintragen.</div>`;return}
+  let power=0;
+  t.innerHTML=`<table><tr><th>Rezept</th><th>Maschine</th><th class="num">Anzahl</th><th class="num">Takt %</th><th>Eingang /min</th><th>Ausgang /min</th><th class="num">MW</th><th>Notiz</th><th></th></tr>
+  ${S.lines.map(l=>{const r=recipeById(l.recipe);if(!r)return "";const f=l.machines*l.clock/100;const pw=powerOf(r.machine,l.clock)*l.machines;power+=pw;
+    return `<tr><td>${esc(r.name)}${r.alt?'<span class="tag alt">Alt</span>':''}</td><td class="muted">${esc(r.machine)}</td>
+    <td class="num"><input type="number" step="0.1" min="0" value="${l.machines}" data-l="${l.id}" data-f="machines" style="width:72px"></td>
+    <td class="num"><input type="number" step="1" min="1" max="250" value="${l.clock}" data-l="${l.id}" data-f="clock" style="width:66px"></td>
+    <td class="muted">${r.inputs.map(i=>`${esc(i.item)} ${fmt(i.rate*f*inMult())}`).join(", ")}</td>
+    <td>${r.outputs.map(o=>`${esc(o.item)} ${fmt(o.rate*f)}`).join(", ")}</td>
+    <td class="num">${fmt(pw)}</td>
+    <td><input type="text" value="${esc(l.note||"")}" data-l="${l.id}" data-f="note" style="width:130px"></td>
+    <td><button class="btn sm danger" data-del="${l.id}">×</button></td></tr>`}).join("")}
+  <tr><td colspan="6" class="muted">Gesamt</td><td class="num"><b>${fmt(power)} MW</b></td><td colspan="2"></td></tr></table>`;
+  t.querySelectorAll("input[data-l]").forEach(inp=>inp.onchange=()=>{const l=S.lines.find(x=>x.id===inp.dataset.l);l[inp.dataset.f]=inp.type==="number"?+inp.value:inp.value;save();renderLines()});
+  t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{S.lines=S.lines.filter(x=>x.id!==b.dataset.del);save();renderLines()});
+}
+$("#lineAdd").onclick=()=>{S.lines.push({id:uid(),recipe:$("#lineRecipe").value,machines:+$("#lineMachines").value,clock:+$("#lineClock").value,note:$("#lineNote").value});$("#lineNote").value="";save();renderLines();toast("Linie hinzugefügt")};
+
+// ---------- Bilanz ----------
+function balance(){
+  const b={}; let power=0;
+  const get=k=>b[k]||(b[k]={prod:0,cons:0});
+  S.lines.forEach(l=>{const r=recipeById(l.recipe);if(!r)return;const f=l.machines*l.clock/100;power+=powerOf(r.machine,l.clock)*l.machines;
+    r.inputs.forEach(i=>get(i.item).cons+=i.rate*f*inMult());r.outputs.forEach(o=>get(o.item).prod+=o.rate*f)});
+  return {b,power};
+}
+function renderBilanz(){
+  const {b,power}=balance();
+  const rows=Object.entries(b).map(([k,v])=>({item:k,...v,net:v.prod-v.cons,raw:!!(S.items[k]&&S.items[k].raw)}));
+  const filter=$("#bilanzFilter").value, q=$("#bilanzSearch").value.toLowerCase();
+  const rawNeed=rows.filter(r=>r.raw).reduce((a,r)=>a+Math.max(0,-r.net),0);
+  const deficits=rows.filter(r=>!r.raw&&r.net<-1e-6).length;
+  const surplus=rows.filter(r=>!r.raw&&r.net>1e-6).length;
+  $("#bilanzKpis").innerHTML=`<div class="kpi"><small>Linien</small><b>${S.lines.length}</b></div>
+   <div class="kpi"><small>Leistung</small><b>${fmt(power)} MW</b></div>
+   <div class="kpi"><small>Rohstoffbedarf</small><b>${fmt(rawNeed)}/min</b></div>
+   <div class="kpi"><small>Defizite</small><b class="${deficits?"neg":""}">${deficits}</b></div>
+   <div class="kpi"><small>Überschüsse</small><b class="${surplus?"pos":""}">${surplus}</b></div>`;
+  let list=rows.filter(r=>filter==="all"||(filter==="raw"&&r.raw)||(filter==="neg"&&r.net<-1e-6)||(filter==="pos"&&r.net>1e-6)).filter(r=>r.item.toLowerCase().includes(q));
+  list.sort((a,b)=>(a.raw===b.raw?a.item.localeCompare(b.item):a.raw?1:-1));
+  const t=$("#bilanzTable");
+  if(!list.length){t.innerHTML=`<div class="empty">Keine Daten – erst Produktionslinien anlegen.</div>`;return}
+  t.innerHTML=`<table><tr><th>Item</th><th class="num">Produktion</th><th class="num">Verbrauch</th><th class="num">Netto /min</th><th>Auslastung</th></tr>
+  ${list.map(r=>{const cls=r.net>1e-6?"pos":r.net<-1e-6?"neg":"zero";const pct=r.prod>0?Math.min(100,r.cons/r.prod*100):0;
+   return `<tr><td>${esc(r.item)}${r.raw?'<span class="tag raw">Rohstoff</span>':''}</td><td class="num">${fmt(r.prod)}</td><td class="num">${fmt(r.cons)}</td>
+   <td class="num ${cls}"><b>${r.net>0?"+":""}${fmt(r.net)}</b></td>
+   <td style="min-width:120px">${r.raw?`<span class="muted">Bedarf ${fmt(r.cons)}/min</span>`:`<span class="muted">${fmt(pct)} % verbraucht</span><div class="bar"><i style="width:${pct}%"></i></div>`}</td></tr>`}).join("")}</table>`;
+}
+$("#bilanzFilter").onchange=renderBilanz;$("#bilanzSearch").oninput=renderBilanz;
+
+// ---------- Rezepte ----------
+function renderRecipes(){
+  const q=$("#recipeSearch").value.toLowerCase(), showAlt=$("#recipeShowAlt").checked;
+  const list=[...S.recipes].filter(r=>(showAlt||!r.alt)&&(r.name.toLowerCase().includes(q)||r.outputs.some(o=>o.item.toLowerCase().includes(q)))).sort((a,b)=>a.name.localeCompare(b.name));
+  const t=$("#recipeTable");
+  t.innerHTML=`<table><tr><th>Rezept</th><th>Maschine</th><th>Eingang /min</th><th>Ausgang /min</th><th>Standard für</th><th></th></tr>
+  ${list.map(r=>{const isDef=r.outputs.filter(o=>S.defaults[o.item]===r.id).map(o=>o.item);
+   return `<tr><td>${esc(r.name)}${r.alt?'<span class="tag alt">Alt</span>':''}</td><td class="muted">${esc(r.machine)}</td>
+   <td class="muted">${r.inputs.map(i=>`${esc(i.item)} ${fmt(i.rate)}`).join(", ")}</td><td>${r.outputs.map(o=>`${esc(o.item)} ${fmt(o.rate)}`).join(", ")}</td>
+   <td>${r.outputs.map(o=>`<label style="display:block;white-space:nowrap"><input type="checkbox" data-def="${r.id}" data-item="${esc(o.item)}" ${S.defaults[o.item]===r.id?"checked":""}> ${esc(o.item)}</label>`).join("")}</td>
+   <td style="white-space:nowrap"><button class="btn sm" data-edit="${r.id}">Bearbeiten</button> <button class="btn sm danger" data-del="${r.id}">×</button></td></tr>`}).join("")}</table>`;
+  t.querySelectorAll("[data-def]").forEach(c=>c.onchange=()=>{if(c.checked)S.defaults[c.dataset.item]=c.dataset.def;else if(S.defaults[c.dataset.item]===c.dataset.def)delete S.defaults[c.dataset.item];save();renderRecipes()});
+  t.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openRecipeForm(recipeById(b.dataset.edit)));
+  t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const r=recipeById(b.dataset.del);if(!confirm(`Rezept "${r.name}" löschen?`))return;
+    S.recipes=S.recipes.filter(x=>x.id!==r.id);S.lines=S.lines.filter(l=>l.recipe!==r.id);Object.keys(S.defaults).forEach(k=>{if(S.defaults[k]===r.id)delete S.defaults[k]});save();renderRecipes()});
+}
+function openRecipeForm(r){
+  const f=$("#recipeForm"); f.classList.remove("hidden");
+  const edit=!!r; r=r||{id:null,name:"",machine:"Constructor",inputs:[{item:"",rate:0}],outputs:[{item:"",rate:0}],alt:false};
+  const dl=`<datalist id="itemsDl">${itemList().map(i=>`<option value="${esc(i)}">`).join("")}</datalist>`;
+  const line=(x,kind)=>`<div class="rowline"><input type="text" list="itemsDl" placeholder="Item" value="${esc(x.item)}" data-k="${kind}" data-f="item"><input type="number" step="0.001" min="0" placeholder="/min" value="${x.rate||""}" data-k="${kind}" data-f="rate" style="width:90px"><button class="btn sm" data-rm="${kind}">×</button></div>`;
+  f.innerHTML=`${dl}<h2 style="margin-top:0">${edit?"Rezept bearbeiten":"Neues Rezept"}</h2>
+  <div class="row" style="margin-bottom:12px"><input type="text" id="rfName" placeholder="Rezeptname" value="${esc(r.name)}" style="width:220px">
+  <select id="rfMachine">${Object.keys(S.machines).map(m=>`<option ${m===r.machine?"selected":""}>${esc(m)}</option>`).join("")}</select>
+  <label class="muted"><input type="checkbox" id="rfAlt" ${r.alt?"checked":""}> Alternativrezept</label></div>
+  <div class="io"><div class="col"><h3>Eingang (Stück/min)</h3><div id="rfIn">${r.inputs.map(x=>line(x,"in")).join("")}</div><button class="btn sm" id="rfAddIn">+ Eingang</button></div>
+  <div class="col"><h3>Ausgang (Stück/min)</h3><div id="rfOut">${r.outputs.map(x=>line(x,"out")).join("")}</div><button class="btn sm" id="rfAddOut">+ Ausgang</button></div></div>
+  <div class="row" style="margin-top:12px"><button class="btn primary" id="rfSave">Speichern</button><button class="btn" id="rfCancel">Abbrechen</button></div>`;
+  const bind=()=>f.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{b.parentElement.remove()});
+  bind();
+  $("#rfAddIn").onclick=()=>{$("#rfIn").insertAdjacentHTML("beforeend",line({item:"",rate:0},"in"));bind()};
+  $("#rfAddOut").onclick=()=>{$("#rfOut").insertAdjacentHTML("beforeend",line({item:"",rate:0},"out"));bind()};
+  $("#rfCancel").onclick=()=>f.classList.add("hidden");
+  $("#rfSave").onclick=()=>{
+    const read=k=>[...f.querySelectorAll(`.rowline`)].filter(d=>d.querySelector(`[data-k="${k}"]`)).map(d=>({item:d.querySelector('[data-f="item"]').value.trim(),rate:+d.querySelector('[data-f="rate"]').value})).filter(x=>x.item&&x.rate>0);
+    const name=$("#rfName").value.trim(), inputs=read("in"), outputs=read("out");
+    if(!name||!outputs.length){toast("Name und mindestens ein Ausgang nötig");return}
+    [...inputs,...outputs].forEach(x=>ensureItem(x.item));
+    const alt=$("#rfAlt").checked, machine=$("#rfMachine").value;
+    if(edit){Object.assign(r,{name,machine,inputs,outputs,alt})}
+    else{const nr={id:uid(),name,machine,inputs,outputs,alt};S.recipes.push(nr);if(!alt)outputs.forEach(o=>{if(!S.defaults[o.item])S.defaults[o.item]=nr.id})}
+    save();f.classList.add("hidden");renderAll();toast("Rezept gespeichert");
+  };
+}
+$("#recipeNew").onclick=()=>openRecipeForm(null);
+$("#recipeSearch").oninput=renderRecipes;$("#recipeShowAlt").onchange=renderRecipes;
+
+// ---------- Items ----------
+function renderItems(){
+  const q=$("#itemSearch").value.toLowerCase();
+  const list=itemList().filter(i=>i.toLowerCase().includes(q));
+  const used=n=>S.recipes.filter(r=>r.inputs.some(x=>x.item===n)||r.outputs.some(x=>x.item===n)).length;
+  $("#itemTable").innerHTML=`<table><tr><th>Item</th><th>Rohstoff</th><th class="num">In Rezepten</th><th>Standardrezept</th><th></th></tr>
+  ${list.map(n=>{const d=S.defaults[n]&&recipeById(S.defaults[n]);return `<tr><td>${esc(n)}</td><td><input type="checkbox" data-raw="${esc(n)}" ${S.items[n].raw?"checked":""}></td><td class="num muted">${used(n)}</td><td class="muted">${d?esc(d.name):"–"}</td>
+   <td><button class="btn sm danger" data-del="${esc(n)}" ${used(n)?"disabled title='In Rezepten verwendet'":""}>×</button></td></tr>`}).join("")}</table>`;
+  $("#itemTable").querySelectorAll("[data-raw]").forEach(c=>c.onchange=()=>{S.items[c.dataset.raw].raw=c.checked;save()});
+  $("#itemTable").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{delete S.items[b.dataset.del];delete S.defaults[b.dataset.del];save();renderItems()});
+}
+$("#itemAdd").onclick=()=>{const n=$("#itemNewName").value.trim();if(!n)return;S.items[n]={raw:$("#itemNewRaw").checked};$("#itemNewName").value="";save();renderItems()};
+$("#itemSearch").oninput=renderItems;
+
+// ---------- Daten ----------
+function renderDaten(){
+  $("#setRecipeMult").value=S.settings.recipeMult;$("#setPowerMult").value=S.settings.powerMult;
+  $("#machineTable").innerHTML=`<table><tr><th>Maschine</th><th class="num">MW bei 100 %</th><th></th></tr>
+  ${Object.entries(S.machines).map(([m,p])=>`<tr><td>${esc(m)}</td><td class="num"><input type="number" step="1" min="0" value="${p}" data-m="${esc(m)}" style="width:80px"></td><td><button class="btn sm danger" data-del="${esc(m)}">×</button></td></tr>`).join("")}
+  <tr><td><input type="text" id="mNew" placeholder="Neue Maschine" style="width:180px"></td><td class="num"><input type="number" id="mNewP" value="0" style="width:80px"></td><td><button class="btn sm" id="mAdd">+</button></td></tr></table>`;
+  $("#machineTable").querySelectorAll("[data-m]").forEach(i=>i.onchange=()=>{S.machines[i.dataset.m]=+i.value;save()});
+  $("#machineTable").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{delete S.machines[b.dataset.del];save();renderDaten()});
+  $("#mAdd").onclick=()=>{const n=$("#mNew").value.trim();if(!n)return;S.machines[n]=+$("#mNewP").value;save();renderDaten()};
+}
+$("#setRecipeMult").onchange=e=>{S.settings.recipeMult=+e.target.value||1;save()};
+$("#setPowerMult").onchange=e=>{S.settings.powerMult=+e.target.value||1;save()};
+$("#exportBtn").onclick=()=>{const json=JSON.stringify(S,null,1);$("#jsonBox").value=json;
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([json],{type:"application/json"}));a.download="ficsit-planer.json";a.click();toast("Exportiert")};
+$("#importBtn").onclick=()=>{try{const d=JSON.parse($("#jsonBox").value);if(!d.recipes||!d.items)throw 0;S=d;S.settings=S.settings||{recipeMult:1,powerMult:1};S.machines=S.machines||{...MACHINES};S.targets=S.targets||[];S.lines=S.lines||[];save();renderAll();toast("Importiert")}catch(e){toast("Ungültiges JSON")}};
+$("#resetBtn").onclick=()=>{if(!confirm("Alle Rezepte, Linien und Ziele auf Standard zurücksetzen?"))return;S=freshState();save();renderAll();toast("Zurückgesetzt")};
+
+// ---------- Init ----------
+function tagTables(){document.querySelectorAll("main table").forEach(t=>{t.classList.add("cards");const ths=[...t.querySelectorAll("tr:first-child th")].map(th=>th.textContent.trim());
+  t.querySelectorAll("tr:not(:first-child)").forEach(tr=>[...tr.children].forEach((td,i)=>{if(ths[i]&&td.tagName==="TD"&&td.getAttribute("colspan")==null)td.setAttribute("data-th",ths[i])}))})}
+function renderAll(){renderPlan();renderLines();renderBilanz();renderRecipes();renderItems();renderDaten();tagTables()}
+if("serviceWorker" in navigator&&location.protocol.startsWith("http")){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+load().then(renderAll);
+new MutationObserver(()=>{clearTimeout(window.__tt);window.__tt=setTimeout(tagTables,30)}).observe(document.querySelector("main"),{childList:true,subtree:true});
+</script>
+</body>
+</html>
